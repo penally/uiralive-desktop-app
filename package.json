@@ -1,0 +1,29 @@
+{
+  "name": "uira.live",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "backend:dev": "cd backend && npm start",
+    "frontend:dev": "cd frontend && npm run dev",
+    "frontend:build": "cd frontend && npm run build",
+    "frontend:install": "cd frontend && npm install",
+    "frontend:start": "cd frontend && npm run preview",
+    "backend:install": "cd backend && npm install",
+    "backend:build": "cd backend && npm run build",
+    "backend:start": "cd backend && npm start",
+    "backend:test": "cd backend && npm test",
+    "backend:lint": "cd backend && npm run lint",
+    "backend:format": "cd backend && npm run format",
+    "backend:format:check": "cd backend && npm run format:check",
+    "dev": "concurrently \"npm run backend:dev\" \"npm run frontend:dev\""
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0"
+  },
+  "dependencies": {
+    "multer": "^2.0.2"
+  },
+  "engines": {
+    "node": ">=22.12.0"
+  }
+}
