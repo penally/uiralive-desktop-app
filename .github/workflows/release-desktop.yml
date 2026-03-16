@@ -21,7 +21,7 @@ jobs:
       matrix:
         include:
           - os: ubuntu-latest
-            platform: "-wl"
+            platform: "-wl --x64"
           - os: macos-latest
             platform: "-m"
     runs-on: ${{ matrix.os }}
