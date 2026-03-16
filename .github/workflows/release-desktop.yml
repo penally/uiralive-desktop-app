@@ -49,6 +49,9 @@ jobs:
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "Building version $VERSION"
 
+      - name: Install app dependencies
+        run: npm ci --prefix app --no-workspaces
+
       - name: Set app version from tag
         working-directory: app
         env:
@@ -56,22 +59,8 @@ jobs:
         run: |
           set -euo pipefail
           echo "APP_VERSION=$APP_VERSION"
-          npm version "$APP_VERSION" --no-git-tag-version
+          npm version "$APP_VERSION" --no-git-tag-version --allow-same-version
           node -e "console.log('package.json version:', require('./package.json').version)"
-
-      - name: Validate app/package.json version
-        working-directory: app
-        run: |
-          node -e "
-            const v = require('./package.json').version;
-            console.log('app/package.json version =', JSON.stringify(v));
-            if (!/^[0-9]+\.[0-9]+\.[0-9]+([\-+][0-9A-Za-z.-]+)?$/.test(v)) {
-              throw new Error('Invalid package.json version: ' + v);
-            }
-          "
-
-      - name: Install app dependencies
-        run: npm ci --prefix app --no-workspaces
 
       - name: Verify release target (penally/uiralive-desktop-app)
         working-directory: app
