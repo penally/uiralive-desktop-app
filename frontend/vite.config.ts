@@ -3,6 +3,7 @@ import react from '@vitejs/plugin-react'
 import path from 'path'
 import obfuscatorPlugin from 'vite-plugin-javascript-obfuscator'
 import { viteStaticCopy } from 'vite-plugin-static-copy'
+import viteCompression from 'vite-plugin-compression'
 
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => {
@@ -15,6 +16,8 @@ export default defineConfig(({ mode }) => {
     base: isElectron ? './' : '/',
     plugins: [
       react(),
+      isProd && viteCompression({ algorithm: 'gzip', ext: '.gz' }),
+      isProd && viteCompression({ algorithm: 'brotliCompress', ext: '.br' }),
       viteStaticCopy({
         targets: [
           ...(!useWasmLease ? [{ src: 'servers-wasm/build/release.wasm', dest: 'assets' }] : []),
@@ -144,6 +147,7 @@ export default defineConfig(({ mode }) => {
         },
       },
       chunkSizeWarningLimit: 550,
+      cssMinify: true,
     },
   }
 })

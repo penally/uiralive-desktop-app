@@ -80,13 +80,19 @@ export const AppRoot: React.FC = () => {
   const [isBooting, setIsBooting] = useState(true);
 
   useEffect(() => {
-    const timeout = setTimeout(() => setIsBooting(false), 1200);
-    
-    // Check extension status when app initializes
-    checkExtensionStatus();
-    
+    const timeout = setTimeout(() => setIsBooting(false), 400);
     return () => clearTimeout(timeout);
   }, []);
+
+  useEffect(() => {
+    if (isBooting) return;
+    const run = () => checkExtensionStatus();
+    if (typeof requestIdleCallback === "function") {
+      requestIdleCallback(run, { timeout: 2000 });
+    } else {
+      setTimeout(run, 500);
+    }
+  }, [isBooting]);
 
   if (isBooting) {
     return <LoadingScreen />;

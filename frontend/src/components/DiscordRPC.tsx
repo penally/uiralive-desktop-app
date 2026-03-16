@@ -3,9 +3,21 @@
  * Only active when running in Electron app.
  */
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
-import { getElectronAPI } from "@/lib/electron";
+import { getElectronAPI, isElectronApp } from "@/lib/electron";
+
+/** HashRouter stores path in hash; use it as fallback when React Router location may lag */
+function getPathname(location: { pathname: string }): string {
+  if (typeof window === "undefined") return location.pathname;
+  const hash = window.location.hash;
+  if (isElectronApp() && hash) {
+    const fromHash = hash.replace(/^#/, "").split("?")[0] || "/";
+    if (fromHash.startsWith("/")) return fromHash;
+    return "/" + fromHash;
+  }
+  return location.pathname;
+}
 
 const ROUTE_PRESENCE: Record<string, { details: string; state?: string }> = {
   "/": { details: "Browsing Home", state: "Home" },
@@ -28,17 +40,29 @@ function getRoutePresence(pathname: string) {
 }
 
 function isWatchPage(pathname: string) {
-  return pathname.startsWith("/movie/watch/") || pathname.startsWith("/tv/watch/");
+  return (
+    pathname.startsWith("/movie/watch/") ||
+    pathname.startsWith("/tv/watch/") ||
+    pathname.startsWith("/anime/watch/")
+  );
 }
 
 export function DiscordRPCProvider({ children }: { children: React.ReactNode }) {
   const location = useLocation();
   const api = getElectronAPI();
+  const [hashTick, setHashTick] = useState(0);
+
+  useEffect(() => {
+    if (!isElectronApp()) return;
+    const onHashChange = () => setHashTick((n) => n + 1);
+    window.addEventListener("hashchange", onHashChange);
+    return () => window.removeEventListener("hashchange", onHashChange);
+  }, []);
 
   useEffect(() => {
     if (!api?.rpcSetActivity) return;
 
-    const pathname = location.pathname;
+    const pathname = getPathname(location);
 
     if (isWatchPage(pathname)) {
       return;
@@ -66,7 +90,7 @@ export function DiscordRPCProvider({ children }: { children: React.ReactNode }) 
     send();
     const retry = setTimeout(send, 3000);
     return () => clearTimeout(retry);
-  }, [location.pathname, api]);
+  }, [location, api, hashTick]);
 
   return <>{children}</>;
 }
@@ -83,12 +107,21 @@ export interface DiscordRPCPlayerProps {
 
 export function useDiscordRPCPlayer(props: DiscordRPCPlayerProps | null) {
   const api = getElectronAPI();
-  const lastUpdateRef = useRef(0);
   const lastIsPlayingRef = useRef<boolean | null>(null);
+  const lastContentRef = useRef<string>("");
 
   useEffect(() => {
     if (!api?.rpcSetActivity) return;
-    if (!props) return;
+
+    if (!props) {
+      api.rpcSetActivity({
+        details: "Watching",
+        state: "Loading...",
+        largeImageKey: "logo",
+        largeImageText: "Uira Live",
+      });
+      return;
+    }
 
     const { title, season, episode, currentTime, duration, isPlaying, posterUrl } = props;
 
@@ -124,18 +157,16 @@ export function useDiscordRPCPlayer(props: DiscordRPCPlayerProps | null) {
       endTimestamp,
     };
 
-    const throttle = 15000;
-    const t = Date.now();
+    const contentKey = `${title}|${season ?? ""}|${episode ?? ""}`;
+    const contentChanged = lastContentRef.current !== contentKey;
+    lastContentRef.current = contentKey;
+
     const isPlayingChanged = lastIsPlayingRef.current !== isPlaying;
     lastIsPlayingRef.current = isPlaying;
 
-    const shouldUpdate =
-      isPlayingChanged ||
-      !isPlaying ||
-      t - lastUpdateRef.current > throttle;
+    const shouldUpdate = isPlayingChanged || contentChanged;
 
     if (shouldUpdate) {
-      lastUpdateRef.current = t;
       api.rpcSetActivity(presence);
     }
   }, [

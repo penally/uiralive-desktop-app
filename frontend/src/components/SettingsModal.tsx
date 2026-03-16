@@ -76,7 +76,8 @@ const UpdateCard: React.FC = () => {
 
   useEffect(() => {
     if (!electron?.updaterOn || !isElectronApp()) return;
-    const unsub1 = electron.updaterOn("updater:update-available", (info: { version?: string }) => {
+    const unsub1 = electron.updaterOn("updater:update-available", (...args: unknown[]) => {
+      const info = args[0] as { version?: string } | undefined;
       setUpdateAvailable(info ? { version: info.version || "New" } : { version: "New" });
       setError(null);
       setCheckMessage(null);
@@ -86,7 +87,8 @@ const UpdateCard: React.FC = () => {
       setCheckMessage("You're on the latest version");
       setError(null);
     });
-    const unsub3 = electron.updaterOn("updater:download-progress", (p: { percent?: number }) => {
+    const unsub3 = electron.updaterOn("updater:download-progress", (...args: unknown[]) => {
+      const p = args[0] as { percent?: number } | undefined;
       setDownloadProgress(p?.percent ?? null);
     });
     const unsub4 = electron.updaterOn("updater:update-downloaded", () => {
@@ -94,7 +96,8 @@ const UpdateCard: React.FC = () => {
       setDownloading(false);
       setDownloadProgress(null);
     });
-    const unsub5 = electron.updaterOn("updater:error", (e: { message?: string }) => {
+    const unsub5 = electron.updaterOn("updater:error", (...args: unknown[]) => {
+      const e = args[0] as { message?: string } | undefined;
       setError(e?.message ?? "Update failed");
       setChecking(false);
       setDownloading(false);

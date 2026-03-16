@@ -20,7 +20,10 @@ try {
 }
 
 app.commandLine.appendSwitch("disable-ipc-flooding-protection");
-app.commandLine.appendSwitch("disable-features", "AutofillServer");
+app.commandLine.appendSwitch("disable-features", "AutofillServer,TranslateUI,Translate,MediaRouter");
+app.commandLine.appendSwitch("disk-cache-size", "52428800");
+
+Menu.setApplicationMenu(null);
 
 if (process.platform === "win32") {
   app.setAppUserModelId("live.uira.app");
@@ -30,7 +33,7 @@ const isDev = process.argv.includes("--dev");
 const isPackaged = app.isPackaged;
 
 function getFrontendUrl() {
-  return "http://localhost:5173";
+  return process.env.FRONTEND_URL || "http://localhost:5173";
 }
 
 /** @type {BrowserWindow | null} */
@@ -56,13 +59,13 @@ function createWindow() {
       nodeIntegration: false,
       sandbox: false,
       webSecurity: true,
+      spellcheck: false,
     },
     title: "Uira Live",
     show: false,
     backgroundColor: "#0c0c0c",
   });
 
-  Menu.setApplicationMenu(null);
   mainWindow.once("ready-to-show", () => mainWindow?.show());
   mainWindow.on("closed", () => { mainWindow = null; });
 

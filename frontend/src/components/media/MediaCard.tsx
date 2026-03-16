@@ -96,6 +96,8 @@ export const MediaCard: React.FC<MediaCardProps> = ({
           <img
             src={imageUrl}
             alt={title}
+            width={780}
+            height={439}
             className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.04]"
             loading="lazy"
             decoding="async"

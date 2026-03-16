@@ -14,7 +14,7 @@ Electron desktop app with built-in extension support. Extension-required sources
    cd app && npm run dev
    ```
 
-The app loads `http://localhost:5173` in dev mode.
+The app loads `http://localhost:4173` in dev mode (Vite preview).
 
 ## Build
 
