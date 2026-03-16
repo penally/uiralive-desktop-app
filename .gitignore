@@ -1,0 +1,12 @@
+# Electron build output
+out
+
+# Local env
+.env
+.env.local
+node_modules
+dist
+out
+/node_modules
+/dist
+/out
