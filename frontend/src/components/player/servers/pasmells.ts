@@ -32,6 +32,14 @@ function getApiBase(): string {
   return (import.meta.env?.VITE_API_BASE_URL as string) || '';
 }
 
+function getAuthHeaders(): Record<string, string> {
+  try {
+    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+    if (token) return { Authorization: `Bearer ${token}` };
+  } catch (_) {}
+  return {};
+}
+
 let scrapersCache: { altName: string; name: string }[] | null = null;
 
 async function getScrapers(): Promise<{ altName: string; name: string }[]> {
@@ -42,7 +50,10 @@ async function getScrapers(): Promise<{ altName: string; name: string }[]> {
   try {
     const base = getApiBase();
     console.log('[Pasmells] getScrapers: fetching');
-    const res = await fetch(`${base}/api/pasmells/scrapers`);
+    const res = await fetch(`${base}/api/pasmells/scrapers`, {
+      credentials: 'include',
+      headers: getAuthHeaders(),
+    });
     if (!res.ok) return SERVER_LIST;
     const data = (await res.json()) as { scrapers?: UiraScraper[] };
     const list = data.scrapers || [];
@@ -104,7 +115,10 @@ export async function fetchPasmellsSources(
   console.log('[Pasmells] fetchPasmellsSources: fetching', { url: url.slice(0, 80) + '...' });
 
   try {
-    const res = await fetch(url, { credentials: 'include' });
+    const res = await fetch(url, {
+      credentials: 'include',
+      headers: getAuthHeaders(),
+    });
     console.log('[Pasmells] fetchPasmellsSources: response', { status: res.status });
     const data = (await res.json()) as {
       sources?: Array<{ file: string; quality: string; type: string; headers?: Record<string, string> }>;

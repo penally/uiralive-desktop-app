@@ -1,7 +1,8 @@
 import React, { useEffect, useState, lazy, Suspense } from 'react';
 import ReactDOM from 'react-dom/client';
 import {
-  BrowserRouter as Router,
+  BrowserRouter,
+  HashRouter,
   Routes,
   Route,
   useLocation,
@@ -11,6 +12,7 @@ import './index.css';
 import { AuthProvider } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { AuthGuard } from './components/AuthGuard';
+import { DiscordRPCProvider } from './components/DiscordRPC';
 import LoadingScreen from './components/home/Loading';
 import { checkExtensionStatus } from './backend/extension';
 
@@ -90,11 +92,19 @@ export const AppRoot: React.FC = () => {
     return <LoadingScreen />;
   }
 
+  // Use HashRouter for file:// or Electron build — BrowserRouter resolves /login to file:///C:/login on Windows
+  const isElectronBuild = import.meta.env.MODE === 'electron';
+  const isFileProtocol = typeof window !== 'undefined' && window.location.protocol === 'file:';
+  const hasElectronAPI = typeof window !== 'undefined' && !!(window as any).electronAPI?.isElectronApp;
+  const Router = isElectronBuild || isFileProtocol || hasElectronAPI ? HashRouter : BrowserRouter;
+
   return (
     <ThemeProvider>
       <AuthProvider>
         <Router>
-          <AppRoutes />
+          <DiscordRPCProvider>
+            <AppRoutes />
+          </DiscordRPCProvider>
         </Router>
       </AuthProvider>
     </ThemeProvider>

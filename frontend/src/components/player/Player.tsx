@@ -22,9 +22,11 @@ import { getFreshServerConfigs } from './servers/index';
 import { DelayedPasmellsTurnstile, BalooPowPrewarm } from './servers/pasmells/PasmellsTurnstile';
 
 import { isExtensionActive } from '@/backend/extension';
+import { getElectronAPI } from '@/lib/electron';
+import { useDiscordRPCPlayer } from '@/components/DiscordRPC';
 import type { MediaSource, SubtitleTrack, PlayerSettings, PlayerState, ProviderSubtitle } from './lib/types';
 import { getVideoFormat, getPlaybackUrl, hasNativeHlsSupport } from './lib/videoLoader';
-import { tmdbApi, getBackdropUrl, type TMDBMovie, type TMDBSeries } from '../../lib/tmdb';
+import { tmdbApi, getBackdropUrl, getPosterUrl, type TMDBMovie, type TMDBSeries } from '../../lib/tmdb';
 import { t } from '../../lib/i18n';
 import { Icon } from '@iconify/react';
 import Hls from 'hls.js';
@@ -197,6 +199,20 @@ const Player: React.FC<PlayerProps> = ({ tmdbId, season, episode }) => {
 	const mediaTitle = useMemo(
 		() => (mediaDetails ? ('title' in mediaDetails ? mediaDetails.title : mediaDetails.name) : null),
 		[mediaDetails]
+	);
+
+	useDiscordRPCPlayer(
+		mediaDetails && getElectronAPI()?.rpcSetActivity
+			? {
+					title: mediaTitle ?? 'Unknown',
+					season,
+					episode,
+					currentTime: playerState.currentTime,
+					duration: playerState.duration,
+					isPlaying: playerState.isPlaying,
+					posterUrl: mediaDetails.poster_path ? getPosterUrl(mediaDetails.poster_path, 'medium') : undefined,
+				}
+			: null
 	);
 
 	useEffect(() => {
@@ -1272,10 +1288,12 @@ const Player: React.FC<PlayerProps> = ({ tmdbId, season, episode }) => {
 		
 		const handleTimeUpdate = () => {
 			if (videoElement) {
+				const playing = !videoElement.paused;
 				setPlayerState(prev => ({
 					...prev,
 					currentTime: videoElement.currentTime,
-					duration: videoElement.duration
+					duration: videoElement.duration,
+					...(prev.isPlaying !== playing ? { isPlaying: playing } : {})
 				}));
 				
 				const skipCredits = playerSettings.skipEndCredits !== false;
@@ -1859,7 +1877,7 @@ const Player: React.FC<PlayerProps> = ({ tmdbId, season, episode }) => {
 				} catch (e) {
 					console.error('Error fetching season episodes for auto-next:', e);
 					const fallbackNext = (currentEpisode ?? 0) + 1;
-					window.location.href = `/tv/watch/${tmdbId}/${currentSeason}/${fallbackNext}`;
+					navigate(`/tv/watch/${tmdbId}/${currentSeason}/${fallbackNext}`);
 					return;
 				}
 			}
@@ -1881,7 +1899,7 @@ const Player: React.FC<PlayerProps> = ({ tmdbId, season, episode }) => {
 				}
 			}
 
-			window.location.href = `/tv/watch/${tmdbId}/${nextSeason}/${nextEpisode}`;
+			navigate(`/tv/watch/${tmdbId}/${nextSeason}/${nextEpisode}`);
 		}
 	};
 
@@ -2468,7 +2486,7 @@ const Player: React.FC<PlayerProps> = ({ tmdbId, season, episode }) => {
 							controlsBarRef={controlsBarRef.current}
 							onClose={() => setIsEpisodesMenuOpen(false)}
 							onSelectEpisode={(newSeason: number, newEpisode: number) => {
-								window.location.href = `/tv/watch/${tmdbId}/${newSeason}/${newEpisode}`;
+								navigate(`/tv/watch/${tmdbId}/${newSeason}/${newEpisode}`);
 							}}
 						/>
 					)}

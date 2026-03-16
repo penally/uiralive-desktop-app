@@ -187,10 +187,6 @@ export const PlayerControls: React.FC<PlayerControlsProps> = ({
     setEndTimeVisible(!endTimeVisible);
   };
 
-  const toggleVolumeSlider = () => {
-    setVolumeSliderVisible(!volumeSliderVisible);
-  };
-
   const handleVolumeButtonClick = (event: React.MouseEvent) => {
     event.stopPropagation();
     event.preventDefault();

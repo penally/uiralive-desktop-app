@@ -29,7 +29,6 @@ export const AnimeCard: React.FC<AnimeCardProps> = ({ media, onClick }) => {
             alt={title}
             loading="lazy"
             className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.04]"
-            loading="lazy"
           />
         ) : (
           <div className="absolute inset-0 flex items-center justify-center text-xs sm:text-sm text-white/40">

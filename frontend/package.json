@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "npm run asbuild:wasm && npm run encrypt-wasm && tsc -b && vite build",
+    "build:electron": "npm run asbuild:wasm && npm run encrypt-wasm && tsc -b && vite build --mode electron",
     "asbuild:wasm": "cd servers-wasm && npm run asbuild",
     "encrypt-wasm": "node scripts/encrypt-wasm.mjs",
     "lint": "eslint .",

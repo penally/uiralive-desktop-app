@@ -10,7 +10,9 @@ export default defineConfig(({ mode }) => {
   const apiTarget = env.VITE_API_BASE_URL
   const useWasmLease = !!(env.VITE_WASM_LEASE === 'true' || env.VITE_X15)
   const isProd = mode === 'production'
+  const isElectron = mode === 'electron' || !!(env.VITE_ELECTRON === 'true')
   return {
+    base: isElectron ? './' : '/',
     plugins: [
       react(),
       viteStaticCopy({

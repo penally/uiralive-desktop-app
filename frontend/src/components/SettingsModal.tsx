@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
+import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -23,18 +24,27 @@ import {
   SlidersHorizontal,
   GripVertical,
   Puzzle,
+  Monitor,
+  Shield,
+  Loader2,
+  AlertTriangle,
+  ExternalLink,
+  Download,
+  RefreshCw,
+  RotateCcw,
 } from "lucide-react";
 import { getSettings, saveSettings, getContinueWatchingItems, getPreferredLanguage, savePreferredLanguage } from "@/components/player/lib/storage";
 import { getServerOrder, saveServerOrder, type ServerOrder } from "@/components/player/lib/serverStorage";
 import { baseServerConfigs } from "@/components/player/servers/index";
 import { isExtensionActive } from "@/backend/extension";
+import { isElectronApp, getElectronAPI } from "@/lib/electron";
 import { config } from "@/lib/config";
 import { fetchPlayerSettings, savePlayerSettingsToBackend, fetchAllProgress, fetchSessions, revokeSession, revokeAllOtherSessions, apiUrl } from "@/lib/api/backend";
 import type { BackendProgress, BackendSession } from "@/lib/api/backend";
 import { version } from "../../package.json";
 import { VerticalScrollArea } from "@/components/media/VerticalScrollArea";
 
-type SettingsTab = "user" | "account" | "appearance" | "preferences" | "subtitles" | "stats" | "about";
+type SettingsTab = "user" | "account" | "appearance" | "preferences" | "subtitles" | "stats" | "about" | "app";
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -42,7 +52,7 @@ interface SettingsModalProps {
   initialTab?: SettingsTab;
 }
 
-const sidebarItems = [
+const baseSidebarItems = [
   { id: "user" as SettingsTab, label: "User", icon: User },
   { id: "account" as SettingsTab, label: "Account", icon: Settings },
   { id: "appearance" as SettingsTab, label: "Appearance", icon: Palette },
@@ -51,6 +61,317 @@ const sidebarItems = [
   { id: "stats" as SettingsTab, label: "Stats", icon: BarChart3 },
   { id: "about" as SettingsTab, label: "About", icon: Info },
 ];
+
+const appSidebarItem = { id: "app" as SettingsTab, label: "App", icon: Monitor };
+
+const UpdateCard: React.FC = () => {
+  const electron = getElectronAPI();
+  const [checking, setChecking] = useState(false);
+  const [downloading, setDownloading] = useState(false);
+  const [updateAvailable, setUpdateAvailable] = useState<{ version: string } | null>(null);
+  const [downloadProgress, setDownloadProgress] = useState<number | null>(null);
+  const [updateDownloaded, setUpdateDownloaded] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [checkMessage, setCheckMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!electron?.updaterOn || !isElectronApp()) return;
+    const unsub1 = electron.updaterOn("updater:update-available", (info: { version?: string }) => {
+      setUpdateAvailable(info ? { version: info.version || "New" } : { version: "New" });
+      setError(null);
+      setCheckMessage(null);
+    });
+    const unsub2 = electron.updaterOn("updater:update-not-available", () => {
+      setUpdateAvailable(null);
+      setCheckMessage("You're on the latest version");
+      setError(null);
+    });
+    const unsub3 = electron.updaterOn("updater:download-progress", (p: { percent?: number }) => {
+      setDownloadProgress(p?.percent ?? null);
+    });
+    const unsub4 = electron.updaterOn("updater:update-downloaded", () => {
+      setUpdateDownloaded(true);
+      setDownloading(false);
+      setDownloadProgress(null);
+    });
+    const unsub5 = electron.updaterOn("updater:error", (e: { message?: string }) => {
+      setError(e?.message ?? "Update failed");
+      setChecking(false);
+      setDownloading(false);
+    });
+    return () => {
+      unsub1();
+      unsub2();
+      unsub3();
+      unsub4();
+      unsub5();
+    };
+  }, [electron]);
+
+  const handleCheck = async () => {
+    if (!electron?.updaterCheck) return;
+    setChecking(true);
+    setError(null);
+    setCheckMessage(null);
+    setUpdateAvailable(null);
+    try {
+      const r = await electron.updaterCheck();
+      if (!r.success && !r.error?.includes("not available")) setError(r.error ?? "Check failed");
+    } finally {
+      setChecking(false);
+    }
+  };
+
+  const handleDownload = async () => {
+    if (!electron?.updaterDownload) return;
+    setDownloading(true);
+    setDownloadProgress(0);
+    setError(null);
+    try {
+      const r = await electron.updaterDownload();
+      if (!r.success) setError(r.error ?? "Download failed");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Download failed");
+    }
+  };
+
+  const handleRestart = () => {
+    electron?.updaterQuitAndInstall?.();
+  };
+
+  if (!isElectronApp() || !electron?.updaterCheck) return null;
+
+  return (
+    <div className="p-4 bg-white/[0.03] border border-white/[0.06] rounded-xl">
+      <div className="flex items-center gap-3 mb-3">
+        <div className="w-10 h-10 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center">
+          <RefreshCw className="w-5 h-5 text-blue-400" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="text-sm font-medium text-white">Updates</div>
+          <div className="text-xs text-white/40 mt-0.5">Check for and install app updates</div>
+        </div>
+      </div>
+      {error && <p className="text-xs text-red-400 mb-3">{error}</p>}
+      {checkMessage && !updateAvailable && <p className="text-xs text-green-400 mb-3">{checkMessage}</p>}
+      <div className="flex flex-wrap items-center gap-2">
+        {!updateAvailable && !updateDownloaded && (
+          <button
+            onClick={handleCheck}
+            disabled={checking}
+            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/10 border border-white/10 text-sm text-white hover:bg-white/15 transition-colors disabled:opacity-50"
+          >
+            {checking ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+            Check for updates
+          </button>
+        )}
+        {updateAvailable && !updateDownloaded && !downloading && (
+          <button
+            onClick={handleDownload}
+            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-blue-500/20 border border-blue-500/30 text-sm text-blue-300 hover:bg-blue-500/30 transition-colors"
+          >
+            <Download className="w-4 h-4" />
+            Download v{updateAvailable.version}
+          </button>
+        )}
+        {downloading && (
+          <div className="flex items-center gap-2 w-full">
+            <div className="flex-1 h-2 rounded-full bg-white/10 overflow-hidden">
+              <div
+                className="h-full bg-blue-500 transition-all duration-300"
+                style={{ width: `${downloadProgress ?? 0}%` }}
+              />
+            </div>
+            <span className="text-xs text-white/50">{Math.round(downloadProgress ?? 0)}%</span>
+          </div>
+        )}
+        {updateDownloaded && (
+          <button
+            onClick={handleRestart}
+            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-green-500/20 border border-green-500/30 text-sm text-green-300 hover:bg-green-500/30 transition-colors"
+          >
+            <RotateCcw className="w-4 h-4" />
+            Restart to install
+          </button>
+        )}
+      </div>
+    </div>
+  );
+};
+
+const WarpSettingsCard: React.FC = () => {
+  const electron = getElectronAPI();
+  const [warpEnabled, setWarpEnabled] = useState<boolean | null>(null);
+  const [warpLoading, setWarpLoading] = useState(false);
+  const [warpError, setWarpError] = useState<string | null>(null);
+  const [showWarpWarning, setShowWarpWarning] = useState(false);
+
+  useEffect(() => {
+    if (electron?.warpStatus) {
+      electron.warpStatus().then((status) => setWarpEnabled(status.enabled)).catch(() => setWarpEnabled(false));
+    }
+  }, [electron]);
+
+  useEffect(() => {
+    const onEsc = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setShowWarpWarning(false);
+    };
+    if (showWarpWarning) document.addEventListener("keydown", onEsc);
+    return () => document.removeEventListener("keydown", onEsc);
+  }, [showWarpWarning]);
+
+  const doEnableWarp = async () => {
+    if (!electron?.warpEnable) return;
+    setWarpLoading(true);
+    setWarpError(null);
+    try {
+      const result = await electron.warpEnable();
+      if (result.success) {
+        setWarpEnabled(true);
+      } else {
+        setWarpError(result.error ?? "Failed to enable WARP");
+      }
+    } catch (e) {
+      setWarpError(e instanceof Error ? e.message : "Failed");
+    } finally {
+      setWarpLoading(false);
+    }
+  };
+
+  const handleWarpToggle = async () => {
+    if (!electron?.warpEnable || !electron?.warpDisable) return;
+    if (warpEnabled) {
+      setWarpLoading(true);
+      setWarpError(null);
+      try {
+        await electron.warpDisable();
+        setWarpEnabled(false);
+      } catch (e) {
+        setWarpError(e instanceof Error ? e.message : "Failed");
+      } finally {
+        setWarpLoading(false);
+      }
+    } else {
+      setShowWarpWarning(true);
+    }
+  };
+
+  if (!electron?.warpEnable) return null;
+
+  return (
+    <div className="p-4 bg-white/[0.03] border border-white/[0.06] rounded-xl">
+      <div className="flex items-center gap-3">
+        <div className="w-10 h-10 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center">
+          <Shield className="w-5 h-5 text-amber-400" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="text-sm font-medium text-white">Cloudflare WARP</div>
+          <div className="text-xs text-white/40 mt-0.5">Route app traffic through Cloudflare WARP proxy (may help with geo-restricted or blocked sources)</div>
+          {warpError && <p className="text-xs text-red-400 mt-1.5">{warpError}</p>}
+        </div>
+        <button
+          onClick={handleWarpToggle}
+          disabled={warpLoading || warpEnabled === null}
+          className={cn(
+            "relative w-9 h-5 rounded-full transition-colors duration-200 flex-shrink-0 focus:outline-none disabled:opacity-50",
+            warpEnabled ? "bg-amber-500" : "bg-white/15"
+          )}
+        >
+          {warpLoading ? (
+            <Loader2 className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-3.5 h-3.5 text-white animate-spin" />
+          ) : (
+            <div
+              className={cn(
+                "absolute top-[3px] w-3.5 h-3.5 rounded-full shadow-sm transition-all duration-200",
+                warpEnabled ? "left-[18px] bg-white" : "left-[3px] bg-white/60"
+              )}
+            />
+          )}
+        </button>
+      </div>
+      {warpEnabled && !warpLoading && (
+        <p className="text-[10px] text-white/30 mt-2.5">Proxy: socks5://127.0.0.1:40000</p>
+      )}
+      {showWarpWarning &&
+        createPortal(
+          <div className="fixed inset-0 z-[10001] flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setShowWarpWarning(false)} />
+            <div
+              className="relative w-full max-w-md overflow-hidden rounded-xl border border-white/[0.08] bg-[#0c0c0c] shadow-xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-start gap-3 p-5">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-amber-500/20">
+                  <AlertTriangle className="h-5 w-5 text-amber-400" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <h3 className="text-base font-semibold text-white">Before enabling Cloudflare WARP</h3>
+                  <p className="mt-2 text-sm text-white/70">
+                    Windows Defender may flag the downloaded tools as a threat. This is a <strong className="text-white">false positive</strong>.
+                  </p>
+                  <p className="mt-3 text-sm text-white/70">
+                    WARP uses two open-source tools downloaded from GitHub:
+                  </p>
+                  <ul className="mt-1.5 list-inside list-disc space-y-0.5 text-sm text-white/60">
+                    <li>
+                      <strong className="text-white/80">wgcf</strong> — generates WireGuard config from Cloudflare WARP
+                    </li>
+                    <li>
+                      <strong className="text-white/80">wireproxy</strong> — creates a local SOCKS5 proxy from that config
+                    </li>
+                  </ul>
+                  <p className="mt-3 text-sm text-white/70">
+                    <strong className="text-white">To avoid the warning</strong>, add an exclusion in Windows Security before enabling:
+                  </p>
+                  <ol className="mt-2 list-decimal space-y-1 pl-4 text-sm text-white/60">
+                    <li>Open Windows Security → Virus & threat protection</li>
+                    <li>Manage settings → Add or remove exclusions</li>
+                    <li>Add folder: <code className="rounded bg-white/10 px-1 py-0.5 font-mono text-xs">%AppData%\uira-live-app\warp</code></li>
+                  </ol>
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    <a
+                      href="https://github.com/ViRb3/wgcf"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 text-xs text-amber-400 hover:text-amber-300"
+                    >
+                      wgcf on GitHub <ExternalLink className="h-3 w-3" />
+                    </a>
+                    <a
+                      href="https://github.com/pufferffish/wireproxy"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 text-xs text-amber-400 hover:text-amber-300"
+                    >
+                      wireproxy on GitHub <ExternalLink className="h-3 w-3" />
+                    </a>
+                  </div>
+                </div>
+              </div>
+              <div className="flex gap-3 border-t border-white/[0.06] p-4">
+                <button
+                  onClick={() => setShowWarpWarning(false)}
+                  className="flex-1 rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-sm font-medium text-white/80 hover:bg-white/10"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => {
+                    setShowWarpWarning(false);
+                    doEnableWarp();
+                  }}
+                  className="flex-1 rounded-lg bg-amber-500 px-4 py-2.5 text-sm font-medium text-black hover:bg-amber-400"
+                >
+                  I understand, enable WARP
+                </button>
+              </div>
+            </div>
+          </div>,
+          document.body
+        )}
+    </div>
+  );
+};
 
 const ChangePasswordModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, onClose }) => {
   const { token } = useAuth();
@@ -191,6 +512,7 @@ const pxToSizeLabel = (px: number): string => {
 };
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, initialTab = "appearance" }) => {
+  const navigate = useNavigate();
   const { isAuthenticated, user, token, updateUser } = useAuth();
   const { selectedTheme, setSelectedTheme, currentTheme } = useTheme();
   const [activeTab, setActiveTab] = useState<SettingsTab>(initialTab);
@@ -601,7 +923,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, i
           <div className="w-16 h-16 rounded-full bg-white/[0.05] border border-white/10 flex items-center justify-center mb-4"><LogIn className="w-8 h-8 text-white/40" /></div>
           <h2 className="text-xl font-semibold text-white mb-2">Not Logged In</h2>
           <p className="text-sm text-white/40 mb-6 max-w-xs">Sign in to access your profile settings and personalize your experience</p>
-          <button onClick={() => { onClose(); window.location.href = "/login"; }} className="px-6 py-2.5 bg-white text-black rounded-lg text-sm font-medium hover:bg-white/90 transition-colors">Sign In</button>
+          <button onClick={() => { onClose(); navigate("/login"); }} className="px-6 py-2.5 bg-white text-black rounded-lg text-sm font-medium hover:bg-white/90 transition-colors">Sign In</button>
         </div>
       );
     }
@@ -689,7 +1011,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, i
           <div className="w-16 h-16 rounded-full bg-white/[0.05] border border-white/10 flex items-center justify-center mb-4"><Settings className="w-8 h-8 text-white/40" /></div>
           <h2 className="text-xl font-semibold text-white mb-2">Account Settings</h2>
           <p className="text-sm text-white/40 mb-6 max-w-xs">Sign in to manage your account security settings</p>
-          <button onClick={() => { onClose(); window.location.href = "/login"; }} className="px-6 py-2.5 bg-white text-black rounded-lg text-sm font-medium hover:bg-white/90 transition-colors">Sign In</button>
+          <button onClick={() => { onClose(); navigate("/login"); }} className="px-6 py-2.5 bg-white text-black rounded-lg text-sm font-medium hover:bg-white/90 transition-colors">Sign In</button>
         </div>
       );
     }
@@ -984,6 +1306,55 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, i
     </div>
   );
 
+  const sidebarItems = isElectronApp()
+    ? [...baseSidebarItems, appSidebarItem]
+    : baseSidebarItems;
+
+  const renderAppContent = () => {
+    const electron = getElectronAPI();
+    const platform = electron?.platform ?? "unknown";
+    const platformLabel =
+      platform === "win32" ? "Windows" : platform === "darwin" ? "macOS" : platform === "linux" ? "Linux" : platform;
+
+    return (
+      <div className="space-y-6 h-full flex flex-col">
+        <div>
+          <h2 className="text-xl font-semibold text-white">App</h2>
+          <p className="text-sm text-white/40 mt-1">Desktop app settings & built-in extension</p>
+        </div>
+        <div className="space-y-4">
+          <div className="p-4 bg-white/[0.03] border border-white/[0.06] rounded-xl">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-green-500/10 border border-green-500/20 flex items-center justify-center">
+                <Puzzle className="w-5 h-5 text-green-400" />
+              </div>
+              <div>
+                <div className="text-sm font-medium text-white">Built-in Extension</div>
+                <div className="text-xs text-white/40 mt-0.5">Enabled — extension-required sources (Pasmells, Vixsrc, Videasy) work without installing a browser extension</div>
+              </div>
+              <div className="ml-auto flex items-center gap-2 px-2.5 py-1 rounded-lg bg-green-500/10 border border-green-500/20">
+                <Check className="w-4 h-4 text-green-400" />
+                <span className="text-sm font-medium text-green-400">Active</span>
+              </div>
+            </div>
+          </div>
+          <UpdateCard />
+          <WarpSettingsCard />
+          <div className="grid grid-cols-2 gap-3">
+            <div className="p-4 bg-white/[0.03] border border-white/[0.06] rounded-xl">
+              <div className="text-xs text-white/40 mb-1">Platform</div>
+              <div className="text-sm font-medium text-white">{platformLabel}</div>
+            </div>
+            <div className="p-4 bg-white/[0.03] border border-white/[0.06] rounded-xl">
+              <div className="text-xs text-white/40 mb-1">App Version</div>
+              <div className="text-sm font-medium text-white">{version}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const renderContent = () => {
     switch (activeTab) {
       case "user": return renderUserContent();
@@ -993,6 +1364,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, i
       case "subtitles": return renderSubtitlesContent();
       case "stats": return renderStatsContent();
       case "about": return renderAboutContent();
+      case "app": return renderAppContent();
       default: return renderAppearanceContent();
     }
   };
@@ -1000,21 +1372,29 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, i
   if (!isOpen) return null;
 
   return createPortal(
-    <div className={cn("fixed inset-0 z-[9999] flex items-end sm:items-center justify-center pt-8 sm:pt-4 pb-16 sm:pb-4 px-2 sm:px-4", isClosing && "opacity-0 transition-opacity duration-150")}>
-      <div className="absolute inset-0 bg-black/85 backdrop-blur-[2px]" onClick={handleClose} />
-      <div
-        className={cn(
-          "relative w-full max-w-4xl overflow-hidden [&_button]:cursor-pointer",
-          "border border-white/[0.08] rounded-t-2xl rounded-b-2xl sm:rounded-2xl",
-          "shadow-[0_32px_64px_rgba(0,0,0,0.6)]",
-          "will-change-transform",
-          "h-[78vh] sm:h-[720px] sm:max-h-[90vh]",
-          isClosing
-            ? "opacity-0 scale-[0.97] transition-[opacity,transform] duration-150 ease-in"
-            : "opacity-100 scale-100 transition-[opacity,transform] duration-200 ease-out"
-        )}
-        style={{ backgroundColor: currentTheme.contentColor, transform: isClosing ? "scale(0.97)" : "scale(1)", "--modal-accent": currentTheme.accentColor } as React.CSSProperties}
-      >
+    <>
+      {/* Backdrop — separate fixed layer, receives outside clicks */}
+      <button
+        type="button"
+        className={cn("fixed inset-0 z-[9999] bg-black/85 backdrop-blur-[2px] border-0 p-0 cursor-default", isClosing && "opacity-0 transition-opacity duration-150")}
+        onClick={handleClose}
+        aria-label="Close"
+      />
+      {/* Modal wrapper — pointer-events-none so clicks pass through to backdrop when outside modal */}
+      <div className={cn("fixed inset-0 z-[10000] flex items-end sm:items-center justify-center pt-8 sm:pt-4 pb-16 sm:pb-4 px-2 sm:px-4 pointer-events-none", isClosing && "opacity-0 transition-opacity duration-150")}>
+        <div
+          className={cn(
+            "relative w-full max-w-4xl overflow-hidden [&_button]:cursor-pointer pointer-events-auto",
+            "border border-white/[0.08] rounded-t-2xl rounded-b-2xl sm:rounded-2xl",
+            "shadow-[0_32px_64px_rgba(0,0,0,0.6)]",
+            "will-change-transform",
+            "h-[78vh] sm:h-[720px] sm:max-h-[90vh]",
+            isClosing
+              ? "opacity-0 scale-[0.97] transition-[opacity,transform] duration-150 ease-in"
+              : "opacity-100 scale-100 transition-[opacity,transform] duration-200 ease-out"
+          )}
+          style={{ backgroundColor: currentTheme.contentColor, transform: isClosing ? "scale(0.97)" : "scale(1)", "--modal-accent": currentTheme.accentColor } as React.CSSProperties}
+        >
         <button
           onClick={handleClose}
           className="hidden sm:inline-flex absolute top-4 right-4 z-10 p-2 rounded-lg bg-white/[0.03] border border-white/[0.06] text-white/40 hover:bg-[var(--modal-accent)]/10 hover:text-[var(--modal-accent)] transition-all"
@@ -1022,97 +1402,30 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, i
           <X className="w-4 h-4" />
         </button>
 
-        <div className="flex flex-col sm:flex-row h-full">
-          {/* Mobile: horizontal pill tabs */}
-          <div className="sm:hidden flex-shrink-0 border-b border-white/[0.06] px-4 py-3 overflow-x-auto [&::-webkit-scrollbar]:hidden">
-            <div className="flex gap-2 min-w-max">
-              {sidebarItems.map((item) => {
-                const Icon = item.icon;
-                const isActive = activeTab === item.id;
-                return (
-                  <button
-                    key={item.id}
-                    onClick={() => setActiveTab(item.id)}
-                    className={cn(
-                      "flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all flex-shrink-0",
-                      !isActive && "bg-white/5 text-white/50 hover:bg-white/10 hover:text-white/70"
-                    )}
-                    style={isActive ? { backgroundColor: "rgba(255,255,255,0.15)", color: "white" } : undefined}
-                  >
-                    <Icon className="w-4 h-4" />
-                    {item.label}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Desktop: sidebar */}
-          <div className="hidden sm:flex w-48 flex-shrink-0 border-r border-black/[0.12] flex-col" style={{ backgroundColor: currentTheme.sidebarColor }}>
-
-            {/* User section */}
-            <div className="p-4 border-b border-white/[0.06]">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-white/[0.06] border border-white/[0.08] flex items-center justify-center overflow-hidden">
-                  {isAuthenticated && user?.avatar ? (
-                    <img src={user.avatar} alt="Avatar" className="w-full h-full object-cover"
-                      onError={(e) => { const t = e.target as HTMLImageElement; t.style.display = 'none'; const f = t.parentElement?.querySelector('.sidebar-avatar-fallback') as HTMLElement; if (f) f.style.display = 'flex'; }} />
-                  ) : isAuthenticated ? (
-                    <User className="w-5 h-5 text-white/50" />
-                  ) : (
-                    <LogIn className="w-5 h-5 text-white/50" />
+        <div className="flex h-full min-h-0">
+          {/* Sidebar — User, Account, Appearance, etc., App on the left */}
+          <nav className="flex-shrink-0 w-44 sm:w-48 border-r border-white/[0.06] flex flex-col py-4 overflow-y-auto">
+            {sidebarItems.map((item) => {
+              const Icon = item.icon;
+              const isActive = activeTab === item.id;
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => setActiveTab(item.id)}
+                  className={cn(
+                    "flex items-center gap-3 px-4 py-2.5 mx-2 rounded-lg text-sm font-medium text-left transition-all",
+                    isActive
+                      ? "bg-white/15 text-white"
+                      : "text-white/50 hover:bg-white/5 hover:text-white/70"
                   )}
-                  {isAuthenticated && user?.avatar && <div className="sidebar-avatar-fallback absolute inset-0 flex items-center justify-center" style={{ display: 'none' }}><User className="w-5 h-5 text-white/50" /></div>}
-                </div>
-                <div className="min-w-0">
-                  {isAuthenticated && user ? (
-                    <><div className="text-sm font-medium text-white truncate">{user.username || user.email?.split('@')[0] || "User"}</div><div className="text-xs text-white/30 truncate">{user.email}</div></>
-                  ) : (
-                    <><div className="text-sm font-medium text-white truncate">Not logged in</div><div className="text-xs text-white/30 truncate">Sign in to continue</div></>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* Navigation — flex-1 pushes branding pill to bottom */}
-            <nav className="p-2 space-y-1 flex-1">
-              {sidebarItems.map((item) => {
-                const Icon = item.icon;
-                const isActive = activeTab === item.id;
-                return (
-                  <button key={item.id} onClick={() => setActiveTab(item.id)}
-                    className={cn("w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all", !isActive && "text-white/40 hover:bg-[var(--modal-accent)]/10 hover:text-[var(--modal-accent)]")}
-                    style={isActive ? { backgroundColor: `${currentTheme.accentColor}20`, color: currentTheme.accentColor } : undefined}>
-                    <Icon className="w-4 h-4" />
-                    {item.label}
-                  </button>
-                );
-              })}
-            </nav>
-
-            {/* Branding pill */}
-            <div className="p-3 border-t border-white/[0.06]">
-              <div className="flex items-center gap-2.5 px-2 py-2 rounded-xl bg-white/[0.04] border border-white/[0.06]">
-                {/* U logo box */}
-                <div
-                  className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 font-bold text-sm select-none"
-                  style={{
-                    backgroundColor: `${currentTheme.accentColor}20`,
-                    color: currentTheme.accentColor,
-                    border: `1px solid ${currentTheme.accentColor}30`,
-                  }}
                 >
-                  U
-                </div>
-                {/* Text */}
-                <div className="min-w-0">
-                  <div className="text-xs font-semibold text-white/80 leading-none">Uira.Live</div>
-                  <div className="text-[10px] text-white/30 mt-0.5 leading-none">v{version}</div>
-                </div>
-              </div>
-            </div>
-
-          </div>
+                  <Icon className="w-4 h-4 flex-shrink-0" />
+                  {item.label}
+                </button>
+              );
+            })}
+          </nav>
 
           {/* Content area */}
           <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
@@ -1121,10 +1434,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, i
             </div>
           </div>
         </div>
+        </div>
       </div>
 
       <ChangePasswordModal isOpen={showChangePasswordModal} onClose={() => setShowChangePasswordModal(false)} />
-    </div>,
+    </>,
     document.body
   );
 };
