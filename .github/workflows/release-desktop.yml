@@ -1,0 +1,80 @@
+# Builds the Uira Live desktop app and publishes releases.
+# Runs from: penally/uiralive (this repo)
+# Publishes to: penally/uiralive-desktop-app (releases only - NOT penally/uiralive)
+# Trigger: push a tag like v1.0.5 or app-v1.0.5
+name: Release Desktop App
+
+on:
+  push:
+    tags:
+      - "v*"
+      - "app-v*"
+
+jobs:
+  release:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            platform: "-wl"
+          - os: macos-latest
+            platform: "-m"
+    runs-on: ${{ matrix.os }}
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: app/package-lock.json
+
+      - name: Extract version from tag
+        id: version
+        run: |
+          TAG="${GITHUB_REF#refs/tags/}"
+          VERSION="${TAG#v}"
+          VERSION="${VERSION#app-}"
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Building version $VERSION"
+
+      - name: Install app dependencies
+        run: npm ci
+        working-directory: app
+
+      - name: Set app version from tag
+        run: |
+          node -e "
+            const fs = require('fs');
+            const pkg = require('./app/package.json');
+            pkg.version = '${{ steps.version.outputs.version }}';
+            fs.writeFileSync('./app/package.json', JSON.stringify(pkg, null, 2) + '\n');
+          "
+
+      - name: Verify release target (penally/uiralive-desktop-app)
+        working-directory: app
+        run: |
+          node -e "
+            process.env.PUBLISH_GITHUB = 'true';
+            const config = require('./electron-builder.config.js');
+            const pub = config.publish;
+            const target = pub.owner + '/' + pub.repo;
+            const expected = 'penally/uiralive-desktop-app';
+            if (target !== expected) {
+              console.error('ERROR: Release target is', target, '- expected', expected);
+              process.exit(1);
+            }
+            console.log('Release target verified:', target);
+          "
+
+      - name: Build and publish to uiralive-desktop-app
+        run: node scripts/clean-out.js && node scripts/png-to-ico.js && electron-builder ${{ matrix.platform }} --config electron-builder.config.js --publish always
+        working-directory: app
+        env:
+          PUBLISH_GITHUB: "true"
+          GH_TOKEN: ${{ secrets.DESKTOP_APP_TOKEN }}

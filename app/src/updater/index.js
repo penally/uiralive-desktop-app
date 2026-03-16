@@ -1,8 +1,3 @@
-/**
- * Auto-updater module with custom UI support.
- * Uses electron-updater; exposes IPC for renderer update UI.
- */
-
 const { app, BrowserWindow, ipcMain } = require("electron");
 
 let autoUpdater = null;

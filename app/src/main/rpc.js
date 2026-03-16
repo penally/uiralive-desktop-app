@@ -1,12 +1,3 @@
-/**
- * Discord Rich Presence (P-Stream style)
- * Activity type 3 = Watching — shows timestamp/progress bar in Discord
- *
- * Setup:
- * 1. App ID: 1483002076308045895
- * 2. Rich Presence > Art Assets: upload manifest-icon-512.maskable.png as "logo"
- */
-
 const DiscordRPC = require("discord-rpc");
 
 const clientId = process.env.DISCORD_CLIENT_ID || "1483002076308045895";

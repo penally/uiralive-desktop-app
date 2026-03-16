@@ -1,12 +1,13 @@
 {
   "name": "uira-live-app",
-  "version": "1.0.4",
+  "version": "1.0.6",
   "description": "Uira.Live desktop app with built-in extension",
   "main": "src/main/index.js",
   "scripts": {
     "dev": "electron . --dev",
     "build": "node scripts/bump-version.js && node scripts/clean-out.js && node scripts/png-to-ico.js && electron-builder --config electron-builder.config.js --publish never",
     "build:all": "node scripts/bump-version.js && node scripts/clean-out.js && electron-builder -mwl --config electron-builder.config.js --publish never",
+    "build:release": "node scripts/clean-out.js && node scripts/png-to-ico.js && electron-builder --config electron-builder.config.js --publish always",
     "start": "electron .",
     "pack": "node scripts/clean-out.js && electron-builder --dir",
     "serve:updates": "npx serve out -p 8080",
@@ -14,6 +15,7 @@
   },
   "author": "",
   "license": "MIT",
+  "repository": "https://github.com/penally/uiralive-desktop-app",
   "devDependencies": {
     "electron": "^33.2.0",
     "electron-builder": "^25.1.8",
@@ -31,7 +33,6 @@
     },
     "files": [
       "src/**/*",
-      "dist/**/*",
       "build/icon.png",
       "build/icon.ico"
     ],

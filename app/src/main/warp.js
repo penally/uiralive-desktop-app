@@ -1,11 +1,3 @@
-/**
- * Cloudflare WARP Proxy Manager
- *
- * Uses wgcf to generate a WireGuard config from Cloudflare WARP,
- * then uses wireproxy to create a local SOCKS5 proxy.
- * This allows per-app VPN routing through Electron's proxy settings.
- */
-
 const { app } = require("electron");
 const { spawn, execSync } = require("child_process");
 const fs = require("fs");
@@ -15,23 +7,19 @@ const { promisify } = require("util");
 const { pipeline: streamPipeline } = require("stream");
 const pipeline = promisify(streamPipeline);
 
-// Configuration
 const PROXY_PORT = 40000;
 const PROXY_HOST = "127.0.0.1";
 const DATA_DIR = path.join(app.getPath("userData"), "warp");
 
-// Binary paths
 const WGCF_PATH = path.join(DATA_DIR, process.platform === "win32" ? "wgcf.exe" : "wgcf");
 const WIREPROXY_PATH = path.join(DATA_DIR, process.platform === "win32" ? "wireproxy.exe" : "wireproxy");
 const WARP_ACCOUNT_PATH = path.join(DATA_DIR, "wgcf-account.toml");
 const WARP_PROFILE_PATH = path.join(DATA_DIR, "wgcf-profile.conf");
 const WIREPROXY_CONFIG_PATH = path.join(DATA_DIR, "wireproxy.conf");
 
-// Process reference
 let wireproxyProcess = null;
 let isEnabled = false;
 
-// GitHub release URLs for binaries
 const WGCF_RELEASES_URL = "https://api.github.com/repos/ViRb3/wgcf/releases/latest";
 const WIREPROXY_RELEASES_URL = "https://api.github.com/repos/pufferffish/wireproxy/releases/latest";
 
@@ -405,9 +393,7 @@ function stopWireproxy() {
     console.error("[WARP] Failed to stop wireproxy:", error);
     try {
       wireproxyProcess?.kill("SIGKILL");
-    } catch {
-      // ignore
-    }
+    } catch {}
     wireproxyProcess = null;
     isEnabled = false;
     return true;

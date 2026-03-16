@@ -33,15 +33,15 @@ const isDev = process.argv.includes("--dev");
 const isPackaged = app.isPackaged;
 
 function getFrontendUrl() {
+  if (isPackaged) {
+    return process.env.FRONTEND_URL || "https://uira.live";
+  }
   return process.env.FRONTEND_URL || "http://localhost:5173";
 }
 
-/** @type {BrowserWindow | null} */
 let mainWindow = null;
-
-// Domains that need extension-like behavior (CORS bypass, custom headers)
 const extensionDomains = new Set();
-const domainHeaders = new Map(); // domain -> { requestHeaders, responseHeaders }
+const domainHeaders = new Map();
 
 function createWindow() {
   const isWin = process.platform === "win32";
@@ -83,7 +83,6 @@ function createWindow() {
   });
 }
 
-// Built-in extension: make request from main process (bypasses CORS)
 ipcMain.handle("extension:makeRequest", async (_, { url, method, headers, body, bodyType }) => {
   try {
     const init = {
@@ -125,7 +124,6 @@ ipcMain.handle("extension:makeRequest", async (_, { url, method, headers, body, 
   }
 });
 
-// Built-in extension: set domain rules for streaming (store for webRequest)
 ipcMain.handle("extension:setDomainRule", async (_, { targetDomains, requestHeaders }) => {
   for (const d of targetDomains || []) {
     extensionDomains.add(d.toLowerCase());
@@ -134,7 +132,6 @@ ipcMain.handle("extension:setDomainRule", async (_, { targetDomains, requestHead
   return { success: true };
 });
 
-// Built-in extension: hello / status
 ipcMain.handle("extension:hello", async () => {
   return {
     success: true,
@@ -144,7 +141,6 @@ ipcMain.handle("extension:hello", async () => {
   };
 });
 
-// Cloudflare WARP proxy
 const WARP_STATE_PATH = path.join(app.getPath("userData"), "warp-enabled.json");
 
 function applyWarpProxy() {
@@ -196,7 +192,6 @@ ipcMain.handle("warp:status", async () => {
   };
 });
 
-// Discord Rich Presence
 ipcMain.handle("rpc:setActivity", async (_, presence) => {
   if (rpc) rpc.setActivity(presence || null);
 });
@@ -205,13 +200,11 @@ ipcMain.handle("rpc:clear", async () => {
   if (rpc) rpc.setActivity(null);
 });
 
-// Domains that need CORS bypass for HLS (extension-required sources)
 const CORS_DOMAINS = ["vixsrc.to", "vix-content.net", "vidfast.co", "videasy.co"];
 
 app.whenReady().then(() => {
   const ses = session.defaultSession;
 
-  // Apply stored domain rules to webRequest
   ses.webRequest.onBeforeSendHeaders({ urls: ["*://*/*"] }, (details, callback) => {
     try {
       const host = new URL(details.url).hostname.toLowerCase();
@@ -225,13 +218,11 @@ app.whenReady().then(() => {
     callback({ requestHeaders: details.requestHeaders });
   });
 
-  // Inject CORS headers for extension-required streaming domains (bypasses CORS for HLS.js)
   ses.webRequest.onHeadersReceived({ urls: ["*://*/*"] }, (details, callback) => {
     try {
       const host = new URL(details.url).hostname.toLowerCase();
       if (CORS_DOMAINS.some((d) => host === d || host.endsWith("." + d))) {
         const resp = { ...(details.responseHeaders || {}) };
-        // Remove existing CORS headers to avoid "multiple values" (server may already send *)
         for (const k of Object.keys(resp)) {
           if (k.toLowerCase().startsWith("access-control-")) delete resp[k];
         }
@@ -250,7 +241,6 @@ app.whenReady().then(() => {
   updater.initUpdater(() => mainWindow);
   if (rpc && typeof rpc.initialize === "function") rpc.initialize();
 
-  // Restore WARP proxy in background if it was enabled last session
   if (warp) {
     (async () => {
       try {
