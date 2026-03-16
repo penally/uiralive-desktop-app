@@ -4,6 +4,9 @@
 # Trigger: push a tag like v1.0.5 or app-v1.0.5
 name: Release Desktop App
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+
 on:
   push:
     tags:
@@ -35,6 +38,11 @@ jobs:
           cache: "npm"
           cache-dependency-path: app/package-lock.json
 
+      - name: Debug Node/npm versions
+        run: |
+          node -v
+          npm -v
+
       - name: Extract version from tag
         id: version
         env:
@@ -42,7 +50,14 @@ jobs:
         run: node app/scripts/extract-version.js
 
       - name: Install app dependencies
-        run: npm ci --prefix app --no-workspaces
+        working-directory: app
+        run: npm ci --include=dev
+
+      - name: Verify electron-builder is installed
+        working-directory: app
+        run: |
+          npm ls electron-builder
+          npx --no-install electron-builder --version
 
       - name: Set app version from tag
         working-directory: app
@@ -71,7 +86,10 @@ jobs:
           "
 
       - name: Build and publish to uiralive-desktop-app
-        run: node scripts/clean-out.js && node scripts/png-to-ico.js && electron-builder ${{ matrix.platform }} --config electron-builder.config.js --publish always
+        run: |
+          node scripts/clean-out.js
+          node scripts/png-to-ico.js
+          ./node_modules/.bin/electron-builder ${{ matrix.platform }} --config electron-builder.config.js --publish always
         working-directory: app
         env:
           PUBLISH_GITHUB: "true"
