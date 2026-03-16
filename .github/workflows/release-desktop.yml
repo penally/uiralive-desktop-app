@@ -54,13 +54,20 @@ jobs:
         env:
           APP_VERSION: ${{ steps.version.outputs.version }}
         run: |
+          set -euo pipefail
+          echo "APP_VERSION=$APP_VERSION"
+          npm version "$APP_VERSION" --no-git-tag-version
+          node -e "console.log('package.json version:', require('./package.json').version)"
+
+      - name: Validate app/package.json version
+        working-directory: app
+        run: |
           node -e "
-            const fs = require('fs');
-            const pkg = require('./package.json');
-            const v = process.env.APP_VERSION;
-            if (!v || v.trim() === '') throw new Error('APP_VERSION is empty');
-            pkg.version = v.trim();
-            fs.writeFileSync('./package.json', JSON.stringify(pkg, null, 2) + '\n');
+            const v = require('./package.json').version;
+            console.log('app/package.json version =', JSON.stringify(v));
+            if (!/^[0-9]+\.[0-9]+\.[0-9]+([\-+][0-9A-Za-z.-]+)?$/.test(v)) {
+              throw new Error('Invalid package.json version: ' + v);
+            }
           "
 
       - name: Install app dependencies
