@@ -87,6 +87,13 @@ jobs:
             console.log('Release target verified:', target);
           "
 
+      - name: Install Wine (for Windows build on Linux)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo dpkg --add-architecture i386
+          sudo apt-get update
+          sudo apt-get install -y wine64 wine32
+
       - name: Build and publish to uiralive-desktop-app
         run: |
           node scripts/clean-out.js
