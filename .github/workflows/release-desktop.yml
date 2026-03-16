@@ -51,17 +51,20 @@ jobs:
 
       - name: Set app version from tag
         working-directory: app
+        env:
+          APP_VERSION: ${{ steps.version.outputs.version }}
         run: |
           node -e "
             const fs = require('fs');
             const pkg = require('./package.json');
-            pkg.version = '${{ steps.version.outputs.version }}';
+            const v = process.env.APP_VERSION;
+            if (!v || v.trim() === '') throw new Error('APP_VERSION is empty');
+            pkg.version = v.trim();
             fs.writeFileSync('./package.json', JSON.stringify(pkg, null, 2) + '\n');
           "
 
       - name: Install app dependencies
-        run: npm ci
-        working-directory: app
+        run: npm ci --prefix app --no-workspaces
 
       - name: Verify release target (penally/uiralive-desktop-app)
         working-directory: app
