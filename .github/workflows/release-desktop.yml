@@ -9,6 +9,7 @@ on:
     tags:
       - "v*"
       - "app-v*"
+      - "release/*"
 
 jobs:
   release:
@@ -36,18 +37,9 @@ jobs:
 
       - name: Extract version from tag
         id: version
-        run: |
-          TAG="${GITHUB_REF#refs/tags/}"
-          # Support: v1.2.3, app-v1.2.3
-          VERSION="$TAG"
-          VERSION="${VERSION#app-}"
-          VERSION="${VERSION#v}"
-          if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+([\-+][0-9A-Za-z\.-]+)?$ ]]; then
-            echo "ERROR: Tag '$TAG' did not produce valid semver. Got '$VERSION'"
-            exit 1
-          fi
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
-          echo "Building version $VERSION"
+        env:
+          GITHUB_REF: ${{ github.ref }}
+        run: node app/scripts/extract-version.js
 
       - name: Install app dependencies
         run: npm ci --prefix app --no-workspaces
