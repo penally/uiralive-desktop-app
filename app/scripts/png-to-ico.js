@@ -13,8 +13,25 @@ if (!fs.existsSync(pngPath)) {
 }
 
 async function run() {
-  const square256 = await sharp(fs.readFileSync(pngPath))
-    .resize(256, 256, { fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 1 } })
+  const img = sharp(fs.readFileSync(pngPath));
+  const meta = await img.metadata();
+  const bg = { r: 0, g: 0, b: 0, alpha: 1 };
+
+  // Always ensure 512x512 PNG for macOS (electron-builder requires at least 512x512)
+  const square512 = await img
+    .clone()
+    .resize(512, 512, { fit: 'contain', background: bg })
+    .png()
+    .toBuffer();
+  fs.writeFileSync(pngPath, square512);
+  if ((meta.width || 0) < 512 || (meta.height || 0) < 512) {
+    console.log('Resized build/icon.png to 512x512 for macOS');
+  }
+
+  // Create .ico for Windows (256 max for ICO format)
+  const square256 = await img
+    .clone()
+    .resize(256, 256, { fit: 'contain', background: bg })
     .png()
     .toBuffer();
   const buf = await toIco(square256, { resize: true, sizes: [16, 32, 48, 256] });

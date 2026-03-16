@@ -28,7 +28,7 @@
     "appId": "live.uira.app",
     "productName": "Uira Live",
     "compression": "normal",
-    "icon": "build/icon.ico",
+    "icon": "build/icon.png",
     "afterPack": "scripts/afterPack.js",
     "directories": {
       "output": "out"
@@ -71,6 +71,7 @@
       "artifactName": "${productName}.Setup.${version}-${arch}.${ext}"
     },
     "mac": {
+      "icon": "build/icon.png",
       "target": [
         {
           "target": "dmg",

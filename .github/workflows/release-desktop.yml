@@ -21,9 +21,11 @@ jobs:
       matrix:
         include:
           - os: ubuntu-latest
-            platform: "-wl --x64"
+            platform: "-wl"
+            config: "electron-builder.ci.js"
           - os: macos-latest
             platform: "-m"
+            config: "electron-builder.config.js"
     runs-on: ${{ matrix.os }}
     permissions:
       contents: write
@@ -89,7 +91,7 @@ jobs:
         run: |
           node scripts/clean-out.js
           node scripts/png-to-ico.js
-          ./node_modules/.bin/electron-builder ${{ matrix.platform }} --config electron-builder.config.js --publish always
+          ./node_modules/.bin/electron-builder ${{ matrix.platform }} --config ${{ matrix.config }} --publish always
         working-directory: app
         env:
           PUBLISH_GITHUB: "true"
