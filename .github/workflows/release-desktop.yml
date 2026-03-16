@@ -38,27 +38,30 @@ jobs:
         id: version
         run: |
           TAG="${GITHUB_REF#refs/tags/}"
-          VERSION="${TAG#v}"
+          # Support: v1.2.3, app-v1.2.3
+          VERSION="$TAG"
           VERSION="${VERSION#app-}"
-          if ! node -e "const v='$VERSION'; const ok=/^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$/.test(v); process.exit(ok?0:1)"; then
-            echo "Invalid semver tag version: $VERSION"
+          VERSION="${VERSION#v}"
+          if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+([\-+][0-9A-Za-z\.-]+)?$ ]]; then
+            echo "ERROR: Tag '$TAG' did not produce valid semver. Got '$VERSION'"
             exit 1
           fi
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "Building version $VERSION"
 
-      - name: Install app dependencies
-        run: npm ci
-        working-directory: app
-
       - name: Set app version from tag
+        working-directory: app
         run: |
           node -e "
             const fs = require('fs');
-            const pkg = require('./app/package.json');
+            const pkg = require('./package.json');
             pkg.version = '${{ steps.version.outputs.version }}';
-            fs.writeFileSync('./app/package.json', JSON.stringify(pkg, null, 2) + '\n');
+            fs.writeFileSync('./package.json', JSON.stringify(pkg, null, 2) + '\n');
           "
+
+      - name: Install app dependencies
+        run: npm ci
+        working-directory: app
 
       - name: Verify release target (penally/uiralive-desktop-app)
         working-directory: app
