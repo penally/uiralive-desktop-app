@@ -19,6 +19,10 @@ module.exports = async function (context) {
     return;
   }
 
-  await rcedit(exePath, { icon: iconPath });
-  console.log("[afterPack] Applied icon to", exePath);
+  try {
+    await rcedit(exePath, { icon: iconPath });
+    console.log("[afterPack] Applied icon to", exePath);
+  } catch (err) {
+    console.warn("[afterPack] Could not apply icon (Wine may be missing on Linux):", err.message);
+  }
 };
