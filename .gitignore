@@ -1,3 +1,7 @@
+# Backend and app live in separate repos - keep locally but don't commit
+backend/
+app/
+
 # Logs
 logs
 *.log

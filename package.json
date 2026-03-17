@@ -16,7 +16,9 @@
     "backend:lint": "cd backend && npm run lint",
     "backend:format": "cd backend && npm run format",
     "backend:format:check": "cd backend && npm run format:check",
-    "dev": "concurrently \"npm run backend:dev\" \"npm run frontend:dev\""
+    "dev": "concurrently \"npm run backend:dev\" \"npm run frontend:dev\"",
+    "install:all": "npm install && npm run frontend:install && npm run backend:install && cd app && npm install",
+    "commit:all": "node scripts/commit-all.js"
   },
   "devDependencies": {
     "concurrently": "^9.1.0"

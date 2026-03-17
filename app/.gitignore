@@ -1,6 +1,0 @@
-# Electron build output
-out
-
-# Local env
-.env
-.env.local
