@@ -8,7 +8,28 @@ Backend and app are **not** committed to uiralive (they're in `.gitignore`). The
 | backend  | https://github.com/penally/Uiralive-Backend |
 | app      | https://github.com/penally/uiralive-desktop-app |
 
-You can keep `backend/` and `app/` locally for development—they just won't be pushed to uiralive. Clone them from their repos if needed.
+## App releases (uiralive-desktop-app)
+
+The release workflow lives in `app/.github/workflows/release-desktop.yml`. To deploy:
+
+1. **Set up app as a git repo** (if not already):
+   ```bash
+   cd app
+   git init
+   git remote add origin https://github.com/penally/uiralive-desktop-app.git
+   git add -A
+   git commit -m "Initial"
+   git branch -M main
+   git push -u origin main
+   ```
+
+2. **Deploy** (bumps version, commits, tags, pushes to uiralive-desktop-app):
+   ```bash
+   cd app && npm run deploy
+   ```
+   Or from uiralive root: `npm run app:deploy`
+
+   GitHub Actions in uiralive-desktop-app will build and publish the release.
 
 ## Daily workflow
 
@@ -25,5 +46,3 @@ git add -A
 git commit -m "your message"
 git push
 ```
-
-`commit:all` only applies when backend and app are submodules.
