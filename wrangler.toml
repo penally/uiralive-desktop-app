@@ -1,0 +1,29 @@
+name = "uiralive-frontend"
+compatibility_date = "2025-01-01"
+
+[vars]
+# API Configuration
+VITE_API_BASE_URL = "http://localhost:3001"
+
+# TMDB / WASM configuration
+VITE_TMDB_API_KEY = "32ffe2cb91e14b05b14faa4a6ed8ccc8"
+VITE_WASM_LEASE   = "true"
+VITE_X8           = "fWJbdk7+T7UTHEE="
+VITE_X9           = "aPSkoq1NG4nO0A=="
+VITE_X10          = "b05MfSSFZRHESM0="
+VITE_X11          = "vg0K7l1n9+m310I="
+VITE_X12          = "mr/tw0fx2kbWHA=="
+VITE_X13          = "mvSkA6Z8ngfMrR0="
+VITE_X14          = "/EVItTPV0YXHrB8RUua8lQ=="
+VITE_X18          = "psH5wkvfP22C8pvhegfy6Q=="
+VITE_X15          = "OThmMGQwMzMwOQ=="
+VITE_X16          = "MjAwZGE0NmI0Mw=="
+VITE_USE_PROXY    = "true"
+
+# Pasmells Turnstile (Cloudflare)
+VITE_PASMELLS_TURNSTILE_SITE_KEY = "0x4AAAAAACkazrput-ggdDtt"
+
+[env.production.vars]
+# Override API base URL for production
+VITE_API_BASE_URL = "https://backend.uira.live"
+
