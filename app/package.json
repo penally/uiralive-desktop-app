@@ -1,8 +1,4 @@
 {
-  "name": "uira-live-app",
-  "version": "1.0.17",
-  "description": "Uira.Live desktop app with built-in extension",
-  "author": "",
   "devDependencies": {
     "electron-builder": "^26.8.1"
   }

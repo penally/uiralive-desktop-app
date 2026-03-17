@@ -1,4 +1,4 @@
-
+// CI config: x64 only to avoid cross-compilation on x64 runners
 const base = require("./electron-builder.config.js");
 
 const x64Only = (target) =>
