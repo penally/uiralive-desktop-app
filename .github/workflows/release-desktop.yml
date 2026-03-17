@@ -72,3 +72,4 @@ jobs:
           ./node_modules/.bin/electron-builder ${{ matrix.platform }} --config ${{ matrix.config }} --publish always
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PUBLISH_GITHUB: "true"
