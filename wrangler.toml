@@ -1,6 +1,10 @@
 name = "uiralive-frontend"
 compatibility_date = "2025-01-01"
 
+# For Cloudflare Pages to treat this as a valid config,
+# point it at the built frontend output directory.
+pages_build_output_dir = "frontend/dist"
+
 [vars]
 # API Configuration
 VITE_API_BASE_URL = "http://localhost:3001"
