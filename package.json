@@ -1,6 +1,6 @@
 {
   "name": "uira-live-app",
-  "version": "1.0.26",
+  "version": "1.0.27",
   "description": "Uira.Live desktop app with built-in extension",
   "main": "src/main/index.js",
   "scripts": {
