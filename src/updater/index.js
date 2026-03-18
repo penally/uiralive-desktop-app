@@ -82,6 +82,17 @@ function setupUpdaterIPC() {
   ipcMain.handle("updater:download", async () => {
     if (!autoUpdater) return { success: false, error: "Updater not available" };
     try {
+      if (process.platform === "darwin") {
+        require("electron").shell.openExternal("https://github.com/penally/uiralive-desktop-app/releases/latest");
+        const win = getMainWindow();
+        if (win && !win.isDestroyed()) {
+          win.webContents.send("updater:error", { 
+            message: "Opened release in browser. (Mac limits auto-updates for unsigned apps)" 
+          });
+        }
+        return { success: false };
+      }
+
       await autoUpdater.downloadUpdate();
       return { success: true };
     } catch (e) {

@@ -8,3 +8,10 @@ node_modules
 # Local env
 .env
 .env.local
+
+
+scripts/deploy.js
+scripts/bump-version.js
+scripts/push-to-desktop-repo.js
+scripts/extract-version.js
+

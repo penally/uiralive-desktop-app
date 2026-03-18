@@ -4,15 +4,15 @@
   "description": "Uira.Live desktop app with built-in extension",
   "main": "src/main/index.js",
   "scripts": {
-    "dev": "electron . --dev",
-    "build": "node scripts/bump-version.js && node scripts/clean-out.js && node scripts/png-to-ico.js && electron-builder --config electron-builder.config.js --publish never",
-    "deploy": "node scripts/deploy.js",
-    "build:all": "node scripts/bump-version.js && node scripts/clean-out.js && electron-builder -mwl --config electron-builder.config.js --publish never",
-    "build:release": "node scripts/clean-out.js && node scripts/png-to-ico.js && electron-builder --config electron-builder.config.js --publish always",
     "start": "electron .",
+    "dev": "electron . --dev",
+    "deploy": "node scripts/deploy.js",
     "pack": "node scripts/clean-out.js && electron-builder --dir",
-    "serve:updates": "npx serve out -p 8080",
-    "dist": "npm run build"
+    "build": "node scripts/clean-out.js && node scripts/png-to-ico.js && electron-builder --config electron-builder.config.js --publish never",
+    "build:win": "node scripts/clean-out.js && node scripts/png-to-ico.js && electron-builder --win --config electron-builder.config.js --publish never",
+    "build:mac": "node scripts/clean-out.js && node scripts/png-to-ico.js && electron-builder --mac --config electron-builder.config.js --publish never",
+    "build:linux": "node scripts/clean-out.js && node scripts/png-to-ico.js && electron-builder --linux --config electron-builder.config.js --publish never",
+    "build:all": "node scripts/clean-out.js && node scripts/png-to-ico.js && electron-builder -mwl --config electron-builder.config.js --publish never"
   },
   "author": "",
   "license": "MIT",
