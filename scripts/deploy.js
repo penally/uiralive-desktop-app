@@ -1,18 +1,10 @@
-#!/usr/bin/env node
-/**
- * Fully automatic deployer for the desktop app.
- * 1. Installs app dependencies (including devDependencies)
- * 2. Verifies electron-builder is available
- * 3. Runs npm run build (bumps version, builds) - skip with --skip-build
- * 4. Syncs package-lock.json version
- * 5. Commits, tags, and pushes to trigger GitHub release workflow
- */
+
 const { execSync } = require("child_process");
 const fs = require("fs");
 const path = require("path");
 
 const appDir = path.join(__dirname, "..");
-const repoRoot = path.join(appDir, "..");
+const repoRoot = appDir;
 
 const skipBuild = process.argv.includes('--skip-build');
 
@@ -37,8 +29,6 @@ function fileExists(filePath) {
 
 console.log("=== Uira Live Desktop Deploy ===\n");
 
-
-run("git remote set-url origin https://github.com/penally/uiralive-desktop-app", { cwd: repoRoot });
 
 const pkgPath = path.join(appDir, "package.json");
 const lockPath = path.join(appDir, "package-lock.json");
@@ -76,8 +66,8 @@ fs.writeFileSync(lockPath, JSON.stringify(lock, null, 2) + "\n");
 const tag = `v${version}`;
 console.log("\nStep 5: Git commit and tag", tag);
 
-run("git add -f app/package.json app/package-lock.json", { cwd: repoRoot });
-const status = runCapture("git status --short -- app/package.json app/package-lock.json", { cwd: repoRoot });
+run("git add -f package.json package-lock.json", { cwd: repoRoot });
+const status = runCapture("git status --short -- package.json package-lock.json", { cwd: repoRoot });
 if (!status) {
   console.log("No version changes to commit (package.json and package-lock.json unchanged).");
   console.log("Creating tag anyway in case you want to re-trigger release...");
@@ -99,8 +89,7 @@ if (!branch) {
 }
 
 console.log("\nStep 6: Pushing to origin...");
-run(`git pull --rebase origin ${branch}`, { cwd: repoRoot });
-run(`git push origin ${branch}`, { cwd: repoRoot });
+run(`git push --force origin ${branch}`, { cwd: repoRoot });
 run(`git push origin ${tag} --force`, { cwd: repoRoot });
 
 console.log("\n=== Done! Release", tag, "triggered. Check GitHub Actions. ===");

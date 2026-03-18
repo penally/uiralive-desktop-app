@@ -1,8 +1,4 @@
-#!/usr/bin/env node
-/**
- * Extracts semver version from GITHUB_REF tag.
- * Supports: v1.2.3, app-v1.2.3, 1.2.3, v1.2.3-beta, v1.0.0-alpha.1, etc.
- */
+
 const ref = process.env.GITHUB_REF || "";
 const tag = ref.replace(/^refs\/tags\//, "");
 let version = tag
@@ -11,7 +7,7 @@ let version = tag
   .replace(/^release\//, "")
   .trim();
 
-// Full semver: X.Y.Z with optional -prerelease and +build
+
 const semverRe = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-([0-9A-Za-z.-]+))?(?:\+([0-9A-Za-z.-]+))?$/;
 if (!semverRe.test(version)) {
   console.error(`ERROR: Tag '${tag}' did not produce valid semver. Got '${version}'`);
