@@ -29,7 +29,37 @@ if (process.platform === "darwin") {
   app.commandLine.appendSwitch("disable-background-timer-throttling"); // Prevent lag when window is in background
 }
 
-Menu.setApplicationMenu(null);
+const template = [
+  ...(process.platform === "darwin" ? [{
+    label: app.name,
+    submenu: [
+      { role: "about" },
+      { type: "separator" },
+      { role: "services" },
+      { type: "separator" },
+      { role: "hide" },
+      { role: "hideOthers" },
+      { role: "unhide" },
+      { type: "separator" },
+      { role: "quit" }
+    ]
+  }] : []),
+  {
+    label: "Edit",
+    submenu: [
+      { role: "undo" },
+      { role: "redo" },
+      { type: "separator" },
+      { role: "cut" },
+      { role: "copy" },
+      { role: "paste" },
+      { role: "pasteAndMatchStyle" },
+      { role: "delete" },
+      { role: "selectAll" }
+    ]
+  }
+];
+Menu.setApplicationMenu(Menu.buildFromTemplate(template));
 
 if (process.platform === "win32") {
   app.setAppUserModelId("live.uira.app");
@@ -59,6 +89,7 @@ function createWindow() {
     minWidth: 800,
     minHeight: 600,
     icon: iconPath,
+    autoHideMenuBar: true,
     webPreferences: {
       preload: path.join(__dirname, "..", "preload.js"),
       contextIsolation: true,
