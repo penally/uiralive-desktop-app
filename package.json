@@ -1,0 +1,121 @@
+{
+  "name": "uira-live-app",
+  "version": "1.0.26",
+  "description": "Uira.Live desktop app with built-in extension",
+  "main": "src/main/index.js",
+  "scripts": {
+    "dev": "electron . --dev",
+    "build": "node scripts/bump-version.js && node scripts/clean-out.js && node scripts/png-to-ico.js && electron-builder --config electron-builder.config.js --publish never",
+    "deploy": "node scripts/deploy.js",
+    "build:all": "node scripts/bump-version.js && node scripts/clean-out.js && electron-builder -mwl --config electron-builder.config.js --publish never",
+    "build:release": "node scripts/clean-out.js && node scripts/png-to-ico.js && electron-builder --config electron-builder.config.js --publish always",
+    "start": "electron .",
+    "pack": "node scripts/clean-out.js && electron-builder --dir",
+    "serve:updates": "npx serve out -p 8080",
+    "dist": "npm run build"
+  },
+  "author": "",
+  "license": "MIT",
+  "repository": "https://github.com/penally/uiralive-desktop-app",
+  "devDependencies": {
+    "electron": "^33.2.0",
+    "electron-builder": "^25.1.8",
+    "rcedit": "^5.0.2",
+    "sharp": "^0.34.5",
+    "to-ico": "^1.1.5"
+  },
+  "build": {
+    "appId": "live.uira.app",
+    "productName": "Uira Live",
+    "compression": "normal",
+    "icon": "build/icon.png",
+    "afterPack": "scripts/afterPack.js",
+    "directories": {
+      "app": ".",
+      "output": "out"
+    },
+    "files": [
+      "src/**/*",
+      "build/icon.png",
+      "build/icon.ico"
+    ],
+    "extraResources": [],
+    "artifactName": "${productName}-${version}-${arch}.${ext}",
+    "win": {
+      "icon": "build/icon.ico",
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        }
+      ],
+      "artifactName": "${productName}-${version}-${arch}.${ext}",
+      "signAndEditExecutable": false
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "allowElevation": true,
+      "installerHeader": "build/installerHeader.png",
+      "installerSidebar": "build/installerSidebar.png",
+      "uninstallerSidebar": "build/installerSidebar.png",
+      "artifactName": "${productName}.Setup.${version}-${arch}.${ext}"
+    },
+    "mac": {
+      "icon": "build/icon.png",
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        }
+      ],
+      "category": "public.app-category.entertainment",
+      "artifactName": "${productName}-${version}-${arch}.${ext}"
+    },
+    "linux": {
+      "target": [
+        {
+          "target": "AppImage",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        }
+      ],
+      "category": "Video",
+      "artifactName": "${productName}-${version}-${arch}.${ext}"
+    }
+  },
+  "dependencies": {
+    "discord-rpc": "^4.0.1",
+    "dotenv": "^16.6.1",
+    "electron-updater": "^6.3.9"
+  }
+}
