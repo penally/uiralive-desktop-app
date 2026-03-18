@@ -24,13 +24,15 @@ try {
 }
 
 app.commandLine.appendSwitch("disable-ipc-flooding-protection");
-app.commandLine.appendSwitch("disable-features", "AutofillServer,TranslateUI,Translate,MediaRouter");
+app.commandLine.appendSwitch("disable-features", "AutofillServer,Autofill,PasswordManager,TranslateUI,Translate,MediaRouter");
 app.commandLine.appendSwitch("disk-cache-size", "52428800");
 
-// Fixes specific to macOS on Silicon to prevent frame/typing lag
+app.commandLine.appendSwitch("log-level", "3"); 
+
+
 if (process.platform === "darwin") {
   app.commandLine.appendSwitch("enable-features", "Metal");
-  app.commandLine.appendSwitch("disable-background-timer-throttling"); // Prevent lag when window is in background
+  app.commandLine.appendSwitch("disable-background-timer-throttling"); 
 }
 
 const template = [
@@ -101,6 +103,7 @@ function createWindow() {
       sandbox: false,
       webSecurity: true,
       spellcheck: false,
+      enableWebSQL: false,      
     },
     title: "Uira Live",
     show: false,
@@ -301,15 +304,22 @@ app.whenReady().then(() => {
   }
 });
 
-app.on("window-all-closed", () => {
-  if (warp) warp.cleanup();
-  if (rpc) rpc.destroy();
+app.on("window-all-closed", async () => {
+  if (warp) await Promise.resolve(warp.cleanup());
+  if (rpc) await Promise.resolve(rpc.destroy());
   if (process.platform !== "darwin") app.quit();
 });
 
-app.on("before-quit", () => {
-  if (warp) warp.cleanup();
-  if (rpc) rpc.destroy();
+let isQuitting = false;
+app.on("before-quit", async (e) => {
+  if (isQuitting) return;
+  e.preventDefault();
+  isQuitting = true;
+  
+  if (warp) await Promise.resolve(warp.cleanup());
+  if (rpc) await Promise.resolve(rpc.destroy());
+  
+  app.quit();
 });
 
 app.on("activate", () => {

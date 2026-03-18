@@ -162,9 +162,12 @@ function initialize() {
   attemptLogin();
 }
 
-function destroy() {
+async function destroy() {
   if (rpc) {
-    rpc.destroy().catch(() => {});
+    if (rpcReady) {
+      await clearActivitySafe();
+    }
+    await rpc.destroy().catch(() => {});
     rpcReady = false;
   }
 }
