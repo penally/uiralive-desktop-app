@@ -166,6 +166,8 @@ async function destroy() {
   if (rpc) {
     if (rpcReady) {
       await clearActivitySafe();
+      
+      await new Promise(resolve => setTimeout(resolve, 200));
     }
     await rpc.destroy().catch(() => {});
     rpcReady = false;
