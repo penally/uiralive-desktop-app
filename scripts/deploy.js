@@ -49,6 +49,9 @@ run("npx --no-install electron-builder --version", { cwd: appDir });
 if (!skipBuild) {
   console.log("\nStep 3: Building app (bumps version)...");
   run("npm run build", { cwd: appDir });
+} else {
+  console.log("\nStep 3: Skipping build, bumping version manually...");
+  run("node scripts/bump-version.js", { cwd: appDir });
 }
 
 
