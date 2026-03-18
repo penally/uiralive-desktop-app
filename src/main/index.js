@@ -4,10 +4,6 @@ const path = require("path");
 const fs = require("fs");
 const { net } = require("electron");
 
-if (process.platform === "darwin") {
-  app.disableHardwareAcceleration();
-}
-
 let warp = null;
 try {
   warp = require("./warp.js");
@@ -26,6 +22,12 @@ try {
 app.commandLine.appendSwitch("disable-ipc-flooding-protection");
 app.commandLine.appendSwitch("disable-features", "AutofillServer,TranslateUI,Translate,MediaRouter");
 app.commandLine.appendSwitch("disk-cache-size", "52428800");
+
+// Fixes specific to macOS on Silicon to prevent frame/typing lag
+if (process.platform === "darwin") {
+  app.commandLine.appendSwitch("enable-features", "Metal");
+  app.commandLine.appendSwitch("disable-background-timer-throttling"); // Prevent lag when window is in background
+}
 
 Menu.setApplicationMenu(null);
 
