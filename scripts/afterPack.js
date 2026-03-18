@@ -22,7 +22,7 @@ module.exports = async function (context) {
   const appOutDir = context.appOutDir;
   const appInfo = context.packager.appInfo;
   const productFilename = appInfo.productFilename;
-  const productName = appInfo.productName || "Uira Live";
+  const productName = "Uira Live";
   const iconPath = path.resolve(__dirname, "..", "build", "icon.ico");
 
   if (!fs.existsSync(iconPath)) {

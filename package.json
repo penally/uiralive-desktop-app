@@ -26,7 +26,7 @@
   },
   "build": {
     "appId": "live.uira.app",
-    "productName": "Uira Live",
+    "productName": "UiraLive",
     "compression": "normal",
     "icon": "build/icon.png",
     "afterPack": "scripts/afterPack.js",

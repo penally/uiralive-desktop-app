@@ -4,6 +4,10 @@ const path = require("path");
 const fs = require("fs");
 const { net } = require("electron");
 
+
+app.name = "Uira Live";
+app.setPath("userData", path.join(app.getPath("appData"), "Uira Live"));
+
 let warp = null;
 try {
   warp = require("./warp.js");
