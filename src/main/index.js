@@ -4,6 +4,10 @@ const path = require("path");
 const fs = require("fs");
 const { net } = require("electron");
 
+if (process.platform === "darwin") {
+  app.disableHardwareAcceleration();
+}
+
 let warp = null;
 try {
   warp = require("./warp.js");
@@ -97,7 +101,7 @@ ipcMain.handle("extension:makeRequest", async (_, { url, method, headers, body, 
         init.headers["Content-Type"] = init.headers["Content-Type"] || "application/json";
       }
     }
-    const response = await net.fetch(url, init);
+    const response = await fetch(url, init);
     const text = await response.text();
     let parsed;
     try {

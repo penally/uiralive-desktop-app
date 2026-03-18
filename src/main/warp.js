@@ -90,6 +90,10 @@ function getAssetName(assets, prefix) {
   const platform = process.platform;
   const arch = process.arch;
 
+  if (platform === "darwin") {
+    return null; // Disable WARP on Mac due to performance issues on Apple Silicon
+  }
+
   let platformStr, archStr;
 
   if (platform === "win32") {
