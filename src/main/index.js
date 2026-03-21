@@ -168,10 +168,14 @@ ipcMain.handle("extension:makeRequest", async (_, { url, method, headers, body, 
   }
 });
 
-ipcMain.handle("extension:setDomainRule", async (_, { targetDomains, requestHeaders }) => {
+ipcMain.handle("extension:setDomainRule", async (_, { targetDomains, requestHeaders, responseHeaders }) => {
   for (const d of targetDomains || []) {
-    extensionDomains.add(d.toLowerCase());
-    domainHeaders.set(d.toLowerCase(), { requestHeaders: requestHeaders || {} });
+    const key = d.toLowerCase();
+    extensionDomains.add(key);
+    domainHeaders.set(key, {
+      requestHeaders: requestHeaders || {},
+      responseHeaders: responseHeaders || {},
+    });
   }
   return { success: true };
 });
@@ -262,18 +266,39 @@ app.whenReady().then(() => {
     callback({ requestHeaders: details.requestHeaders });
   });
 
+  function mergeCorsResponseHeaders(details, extraPairs) {
+    const resp = { ...(details.responseHeaders || {}) };
+    for (const k of Object.keys(resp)) {
+      if (k.toLowerCase().startsWith("access-control-")) delete resp[k];
+    }
+    for (const [k, v] of extraPairs) {
+      if (v == null || v === "") continue;
+      resp[k.toLowerCase()] = [String(v)];
+    }
+    if (!resp["access-control-allow-methods"]) {
+      resp["access-control-allow-methods"] = ["GET, HEAD, OPTIONS"];
+    }
+    if (!resp["access-control-allow-headers"]) {
+      resp["access-control-allow-headers"] = ["*"];
+    }
+    return resp;
+  }
+
   ses.webRequest.onHeadersReceived({ urls: ["*://*/*"] }, (details, callback) => {
     try {
       const host = new URL(details.url).hostname.toLowerCase();
+      const rule = domainHeaders.get(host);
+      if (rule?.responseHeaders && Object.keys(rule.responseHeaders).length > 0) {
+        const pairs = Object.entries(rule.responseHeaders);
+        callback({ responseHeaders: mergeCorsResponseHeaders(details, pairs) });
+        return;
+      }
       if (CORS_DOMAINS.some((d) => host === d || host.endsWith("." + d))) {
-        const resp = { ...(details.responseHeaders || {}) };
-        for (const k of Object.keys(resp)) {
-          if (k.toLowerCase().startsWith("access-control-")) delete resp[k];
-        }
-        resp["access-control-allow-origin"] = ["*"];
-        resp["access-control-allow-methods"] = ["GET, HEAD, OPTIONS"];
-        resp["access-control-allow-headers"] = ["*"];
-        callback({ responseHeaders: resp });
+        callback({
+          responseHeaders: mergeCorsResponseHeaders(details, [
+            ["access-control-allow-origin", "*"],
+          ]),
+        });
         return;
       }
     } catch (_) {}
